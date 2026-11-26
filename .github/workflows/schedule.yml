@@ -1,0 +1,63 @@
+name: attendance
+
+on:
+  schedule:
+    # 北京时间每天 00:30 和 12:30 各执行一次（UTC 16:30 / 04:30）
+    # 两次执行可避免 GitHub 定时任务偶发延迟导致漏签；重复签到会被接口识别为“今天已签到”
+    - cron: '30 16 * * *'
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      SKLAND_TOKENS:
+        required: true
+      SKLAND_NOTIFICATION_URLS:
+        required: false
+      SKLAND_ANONYMOUS:
+        required: false
+      SKLAND_MAX_RETRIES:
+        required: false
+    inputs:
+      repository:
+        description: The repository to run the workflow on
+        default: enpitsuLin/skland-daily-attendance
+        required: false
+        type: string
+
+jobs:
+  attendance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.repository || github.repository }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.13.0
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run daily attendance
+        run: pnpm action
+        env:
+          SKLAND_TOKENS: ${{ secrets.SKLAND_TOKENS }}
+          SKLAND_NOTIFICATION_URLS: ${{ secrets.SKLAND_NOTIFICATION_URLS }}
+          SKLAND_MAX_RETRIES: ${{ secrets.SKLAND_MAX_RETRIES }}
+          SKLAND_ANONYMOUS: ${{ secrets.SKLAND_ANONYMOUS }}
+
+  workflow-keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: liskin/gh-workflow-keepalive@v1
