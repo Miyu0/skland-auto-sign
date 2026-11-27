@@ -60,10 +60,10 @@ try {
   // 等待 HTTP 服务就绪
   await core.group('等待服务启动', async () => {
     core.info(`服务地址: ${BASE_URL}`)
-    core.info('超时时间: 60 秒')
+    core.info('超时时间: 180 秒')
     await waitOn({
       resources: [BASE_URL],
-      timeout: 60000, // 60 秒超时
+      timeout: 180000, // 180 秒超时
       interval: 1000, // 每秒检查一次
     })
     core.info('✅ HTTP 服务已启动')
